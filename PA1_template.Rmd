@@ -1,20 +1,71 @@
 # Reproducible Research: Peer Assessment 1
 
+## Packages
+I am going to use ggplot2 for ploting and data.table for subsetting, so I have to load it first.
+```{r}
+library(ggplot2)
+library(data.table)
+```
+
 
 ## Loading and preprocessing the data
+First we need to unzip and read data.
+```{r}
+unzip("activity.zip")
+activity <- data.table(read.csv("activity.csv"))
 
+```
 
 
 ## What is mean total number of steps taken per day?
 
 
+We have alot of NA's in the data, so we have to ignore them during computations by applying option **na.rm=TRUE**.  
+
+```{r}
+
+setkey(activity, date)
+stepByDay <- activity[,sum(steps, na.rm=TRUE), date]
+
+setnames(stepByDay, "V1", "steps")
+
+p <- ggplot(stepByDay, aes(x=steps))  + 
+  geom_histogram(binwidth=1000, colour="black", fill="white") + 
+  geom_vline(data = stepByDay, aes(xintercept = mean(steps)), colour="green", show_guide = T) +
+  geom_vline(data = stepByDay, aes(xintercept = median(steps)), colour="red", show_guide = T) + 
+  ggtitle("Mean and median total number of steps taken per day")
+
+print(p)
+
+```
+
+
 
 ## What is the average daily activity pattern?
+
+```{r}
+setkey(activity, interval)
+stepByInt <- activity[,mean(steps, na.rm=TRUE), interval]
+setnames(stepByInt, "V1", "meanSteps")
+
+ggplot(stepByInt, aes(x=interval, y=meanSteps)) +
+  geom_line() +
+  ggtitle("Average number of steps taken, averaged across all days")
+
+```
 
 
 
 ## Imputing missing values
+Total number of missing values in the dataset
+```{r}
+table(is.na(activity$steps))["TRUE"]
+```
 
+
+```{r}
+setkey(activity, steps)
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
