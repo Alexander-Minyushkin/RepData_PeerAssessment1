@@ -34,17 +34,21 @@ setnames(stepByDay, "V1", "steps")
 
 p <- ggplot(stepByDay, aes(x=steps))  + 
   geom_histogram(binwidth=1000, colour="black", fill="white") + 
-  geom_vline(aes(xintercept = mean(steps)), colour="green", show_guide = T) +
-  geom_vline(aes(xintercept = median(steps)), colour="red", show_guide = T) + 
-  ggtitle("Mean and median total number of steps taken per day") +
+  ggtitle("Histogram of the total number of steps taken each day") +
   theme(legend.position="bottom") 
-   
-displayLegend <- c(paste0("Mean = ", round(mean(stepByDay$steps),2)), 
-                   paste0("Median = ", median(stepByDay$steps)))
 
-p + scale_colour_manual( values = c("red","green"), 
-                       limits = displayLegend)
+p 
 
+```
+
+Mean value is 
+```{r}
+mean(stepByDay$steps)
+```
+
+Median is
+```{r}
+median(stepByDay$steps)
 ```
 
 
@@ -79,13 +83,18 @@ actImpute[is.na(steps)]$steps <- as.integer(mean(activity$steps, na.rm=TRUE))
 stepByDayImpute <- actImpute[,sum(steps), date]
 setnames(stepByDayImpute, "V1", "steps")
 
-displayLegend <- c(paste0("Mean = ", round(mean(stepByDayImpute$steps), 2)), 
-                   paste0("Median = ", median(stepByDayImpute$steps)))
+p %+% stepByDayImpute %+% ggtitle("Imputed Data. Histogram of the total number of steps taken each day") 
 
-p %+% stepByDayImpute %+% ggtitle("Imputed Data. Mean and median total number of steps taken per day") +
-  scale_colour_manual( values = c("green","green"), 
-                       limits = displayLegend)
+```
 
+Mean value of imputed data is 
+```{r}
+mean(stepByDayImpute$steps)
+```
+
+Median of imputed data is
+```{r}
+median(stepByDayImpute$steps)
 ```
 We can see that thouse days with only NAs values now contribute to the mean value of distribution.  
 Therefore distribution mean and median values shifted and become closer to each other.
@@ -94,5 +103,12 @@ Therefore distribution mean and median values shifted and become closer to each 
 
 ```{r}
 activity$wd <- as.factor(weekdays(strptime(activity$date, "%Y-%m-%d"), TRUE))
+activity$fWeekEnd <- as.factor(sapply( activity$wd, function(d) if( d=="Sat" || d=="Sun") "weekend" else "weekday"))
+
+
+wdActivity <- activity[,mean(steps, na.rm=TRUE), by=c("interval", "fWeekEnd")]
+setnames(wdActivity, "V1", "steps")
+
+qplot(interval, steps, data=wdActivity, facets = fWeekEnd ~ ., geom="line")+ggtitle( "Average number of steps taken")
 ```
 
