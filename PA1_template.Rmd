@@ -1,10 +1,13 @@
 # Reproducible Research: Peer Assessment 1
 
-## Packages
-I am going to use ggplot2 for ploting and data.table for subsetting, so I have to load it first.
+## Prerequisites
+I am going to use ggplot2 for ploting and data.table for subsetting, so I have to load it first.  
+Also set up locale to make work with weekdays consistent.
 ```{r}
 library(ggplot2)
 library(data.table)
+
+Sys.setlocale("LC_TIME", "us")
 ```
 
 
@@ -31,11 +34,16 @@ setnames(stepByDay, "V1", "steps")
 
 p <- ggplot(stepByDay, aes(x=steps))  + 
   geom_histogram(binwidth=1000, colour="black", fill="white") + 
-  geom_vline(data = stepByDay, aes(xintercept = mean(steps)), colour="green", show_guide = T) +
-  geom_vline(data = stepByDay, aes(xintercept = median(steps)), colour="red", show_guide = T) + 
-  ggtitle("Mean and median total number of steps taken per day")
+  geom_vline(aes(xintercept = mean(steps)), colour="green", show_guide = T) +
+  geom_vline(aes(xintercept = median(steps)), colour="red", show_guide = T) + 
+  ggtitle("Mean and median total number of steps taken per day") +
+  theme(legend.position="bottom") 
+   
+displayLegend <- c(paste0("Mean = ", round(mean(stepByDay$steps),2)), 
+                   paste0("Median = ", median(stepByDay$steps)))
 
-print(p)
+p + scale_colour_manual( values = c("red","green"), 
+                       limits = displayLegend)
 
 ```
 
@@ -62,10 +70,29 @@ Total number of missing values in the dataset
 table(is.na(activity$steps))["TRUE"]
 ```
 
-
+Make a copy of activity data to eliminate NAs and substitute NAs there.
 ```{r}
-setkey(activity, steps)
-```
+actImpute <- activity
 
+actImpute[is.na(steps)]$steps <- as.integer(mean(activity$steps, na.rm=TRUE))
+
+stepByDayImpute <- actImpute[,sum(steps), date]
+setnames(stepByDayImpute, "V1", "steps")
+
+displayLegend <- c(paste0("Mean = ", round(mean(stepByDayImpute$steps), 2)), 
+                   paste0("Median = ", median(stepByDayImpute$steps)))
+
+p %+% stepByDayImpute %+% ggtitle("Imputed Data. Mean and median total number of steps taken per day") +
+  scale_colour_manual( values = c("green","green"), 
+                       limits = displayLegend)
+
+```
+We can see that thouse days with only NAs values now contribute to the mean value of distribution.  
+Therefore distribution mean and median values shifted and become closer to each other.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+activity$wd <- as.factor(weekdays(strptime(activity$date, "%Y-%m-%d"), TRUE))
+```
+
